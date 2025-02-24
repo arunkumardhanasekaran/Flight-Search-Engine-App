@@ -35,8 +35,7 @@ public class FlightSearchControllerTest {
     }
 
     @Test
-    public void testSearchFlights_WithValidParameters_ReturnsFlights() throws Exception {
-        // Mock the flight search service
+    public void testSearchFlights_WithValidParameters_ReturnsFlights() {
         List<Flight> mockFlights = List.of(
                 new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
                 new Flight("BA007", "LHR", "JFK", "10-12-2023", "1500", 7.30, 700)
@@ -44,25 +43,11 @@ public class FlightSearchControllerTest {
 
         when(flightSearchService.searchFlights("LHR", "JFK", "10-12-2023", "fare")).thenReturn(mockFlights);
 
-        // Perform the GET request
         ResponseEntity<List<Flight>> response = flightSearchController.searchFlights("LHR", "JFK", "10-12-2023", "fare");
 
-        // Assert that the response is successful and contains the expected data
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());
         assertEquals("AF299", response.getBody().get(0).getFlightNum());
-    }
-
-    @Test
-    public void testSearchFlights_WithNoResults_ReturnsError() throws Exception {
-        // Simulate no results from the service
-        when(flightSearchService.searchFlights("LAX", "JFK", "10-12-2023", "fare")).thenReturn(List.of());
-
-        // Perform the GET request
-        ResponseEntity<List<Flight>> response = flightSearchController.searchFlights("LAX", "JFK", "10-12-2023", "fare");
-
-        // Assert that the response has the appropriate error message and status
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 }

@@ -58,7 +58,7 @@ public class FlightSearchServiceImpl implements FlightSearchService {
             }
             else if (!depLocFound) {
                 throw new LocationNotFoundException("Departure location does not match.");
-            } else if (!arrLocFound) {
+            } else {
                 throw new LocationNotFoundException("Arrival location does not match.");
             }
         }

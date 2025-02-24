@@ -1,5 +1,7 @@
 package com.akcode.flightsearch.service;
 
+import com.akcode.flightsearch.exception_handling.LocationNotFoundException;
+import com.akcode.flightsearch.exception_handling.NoFlightsAvailableException;
 import com.akcode.flightsearch.model.Flight;
 import com.akcode.flightsearch.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,10 +10,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -29,31 +31,61 @@ public class FlightSearchServiceTest {
     }
 
     @Test
-    public void testSearchFlights_WithValidParameters_ReturnsSortedFlights() throws IOException {
-        // Prepare mock flight data
+    public void testSearchFlights_WithValidParameters_ReturnsSortedFlights_ByFare() {
         List<Flight> mockFlights = List.of(
                 new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
                 new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900),
                 new Flight("BA007", "LHR", "JFK", "10-12-2023", "1500", 7.30, 700)
         );
 
-        // Mock CSVReader to return the mock data
         when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
 
-        // Call the service method
         List<Flight> flights = flightSearchService.searchFlights("LHR", "JFK", "10-12-2023", "fare");
 
-        // Assert the flights are sorted by fare
         assertEquals(1, flights.size());
-//        assertEquals("AF299", flights.get(0).getFlightNum());  // First flight should have the lowest fare (480)
-//        assertEquals("BA007", flights.get(1).getFlightNum());  // Second flight should have fare 700
+        assertEquals("BA007", flights.get(0).getFlightNum());
 
-        // Verify if the CSVReader's readFlightsFromFile method was called
         verify(fileReaderUtil, times(1)).getFlightData(anyString());
     }
 
     @Test
-    public void testSearchFlights_WithInvalidDepartureLocation_ReturnsEmpty() throws IOException {
+    public void testSearchFlights_WithValidParameters_ReturnsSortedFlights_ByDuration() {
+        List<Flight> mockFlights = List.of(
+                new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
+                new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900),
+                new Flight("BA007", "LHR", "JFK", "10-12-2023", "1500", 7.30, 700)
+        );
+
+        when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
+
+        List<Flight> flights = flightSearchService.searchFlights("LHR", "JFK", "10-12-2023", "duration");
+
+        assertEquals(1, flights.size());
+        assertEquals("BA007", flights.get(0).getFlightNum());
+
+        verify(fileReaderUtil, times(1)).getFlightData(anyString());
+    }
+
+    @Test
+    public void testSearchFlights_WithValidParameters_ReturnsSortedFlights_ByBoth() {
+        List<Flight> mockFlights = List.of(
+                new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
+                new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900),
+                new Flight("BA007", "LHR", "JFK", "10-12-2023", "1500", 7.30, 700)
+        );
+
+        when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
+
+        List<Flight> flights = flightSearchService.searchFlights("LHR", "JFK", "10-12-2023", "both");
+
+        assertEquals(1, flights.size());
+        assertEquals("BA007", flights.get(0).getFlightNum());
+
+        verify(fileReaderUtil, times(1)).getFlightData(anyString());
+    }
+
+    @Test
+    public void testSearchFlights_WithInvalidArrivalLocation() {
         List<Flight> mockFlights = List.of(
                 new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
                 new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900)
@@ -61,20 +93,49 @@ public class FlightSearchServiceTest {
 
         when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
 
-        List<Flight> flights = flightSearchService.searchFlights("LAX", "JFK", "10-12-2023", "fare");
+        Throwable exception = assertThrows(LocationNotFoundException.class, () -> flightSearchService.searchFlights("MUC", "FRA", "10-12-2023", "fare"));
 
-        // Assert that no flights were found
-        assertTrue(flights.isEmpty());
+        assertEquals("Arrival location does not match.", exception.getMessage());
     }
 
     @Test
-    public void testSearchFlights_WithNoFlightsAvailable_ReturnsError() throws IOException {
-        when(fileReaderUtil.getFlightData(anyString())).thenReturn(List.of());
+    public void testSearchFlights_WithInvalidDepartureLocation() {
+        List<Flight> mockFlights = List.of(
+                new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
+                new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900)
+        );
 
-        // Ensure the method throws an exception when no flights are found
-        Exception exception = assertThrows(RuntimeException.class, () -> {
-            flightSearchService.searchFlights("LHR", "JFK", "10-12-2023", "fare");
-        });
+        when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
+
+        Throwable exception = assertThrows(LocationNotFoundException.class, () -> flightSearchService.searchFlights("LAX", "JFK", "10-12-2023", "fare"));
+
+        assertEquals("Departure location does not match.", exception.getMessage());
+    }
+
+    @Test
+    public void testSearchFlights_WithInvalidLocation() {
+        List<Flight> mockFlights = List.of(
+                new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
+                new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900)
+        );
+
+        when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
+
+        Throwable exception = assertThrows(LocationNotFoundException.class, () -> flightSearchService.searchFlights("JFK", "LAX", "10-12-2023", "fare"));
+
+        assertEquals("Both Departure and Arrival location does not match.", exception.getMessage());
+    }
+
+    @Test
+    public void testSearchFlights_WithNoFlightsAvailable_ReturnsError() {
+        List<Flight> mockFlights = List.of(
+                new Flight("AF299", "FRA", "LHR", "20-11-2023", "0600", 4.10, 480),
+                new Flight("LH123", "MUC", "JFK", "15-12-2023", "0900", 8.50, 900)
+        );
+
+        when(fileReaderUtil.getFlightData(anyString())).thenReturn(mockFlights);
+
+        Throwable exception = assertThrows(NoFlightsAvailableException.class, () -> flightSearchService.searchFlights("FRA", "LHR", "10-12-2023", "fare"));
 
         assertEquals("No flights available for the given parameters.", exception.getMessage());
     }
