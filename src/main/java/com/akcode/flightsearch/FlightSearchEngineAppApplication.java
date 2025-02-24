@@ -1,4 +1,4 @@
-package com.akcode.flightsearch.Flight_Search_Engine_App;
+package com.akcode.flightsearch;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

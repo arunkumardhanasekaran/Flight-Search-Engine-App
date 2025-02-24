@@ -1,4 +1,4 @@
-package com.akcode.flightsearch.Flight_Search_Engine_App;
+package com.akcode.flightsearch;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
